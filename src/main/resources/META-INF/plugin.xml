@@ -35,6 +35,11 @@
                     icon="AllIcons.Nodes.Plugin"
                     anchor="right"
                     factoryClass="com.example.restate.toolwindow.RestateToolWindowFactory"/>
+
+        <!-- Register the Restate Java Gradle project template -->
+        <directoryProjectGenerator implementation="com.example.restate.project.RestateJavaGradleProjectGenerator"/>
+
+        <moduleBuilder builderClass="com.example.restate.project.RestateJavaGradleModuleProjectGenerator" />
     </extensions>
 
     <actions>
