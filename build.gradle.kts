@@ -24,6 +24,7 @@ dependencies {
     // Add necessary plugin dependencies for compilation here, example:
     bundledPlugin("com.intellij.java")
     bundledPlugin("org.jetbrains.kotlin")
+    bundledPlugin("com.intellij.gradle")
   }
 
   // GitHub API for Java

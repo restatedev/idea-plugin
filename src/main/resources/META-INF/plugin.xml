@@ -25,6 +25,7 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.gradle</depends>
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
@@ -40,6 +41,12 @@
         <directoryProjectGenerator implementation="com.example.restate.project.RestateJavaGradleProjectGenerator"/>
 
         <moduleBuilder builderClass="com.example.restate.project.RestateJavaGradleModuleProjectGenerator" />
+
+        <runConfigurationExtension implementation="com.example.restate.runconfiguration.RestateRunConfigurationExtension" runnerId="Java"/>
+
+        <notificationGroup id="Restate Plugin Notifications"
+                           displayType="BALLOON"
+                           key="restate.notification"/>
     </extensions>
 
     <actions>
