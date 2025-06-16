@@ -7,8 +7,6 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 
 class RestateToolWindowFactory : ToolWindowFactory {
-  override val icon = RestateIcons.Restate
-
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
     val restateToolWindow = RestateToolWindow(project, toolWindow)
     val contentFactory = ContentFactory.getInstance()

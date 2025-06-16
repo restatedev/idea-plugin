@@ -27,7 +27,7 @@ class RestateProjectGenerator : WebProjectTemplate<RestateProjectGenerator.Resta
     KOTLIN("Kotlin", "/projectTemplates/kotlin")
   }
 
-  override fun getIcon() = RestateIcons.Restate
+  override fun getIcon() = RestateIcons.ProjectGenerator
 
   override fun getName() = "Restate"
 

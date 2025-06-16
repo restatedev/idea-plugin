@@ -292,7 +292,6 @@ class RestateServerManager(private val project: Project) {
    * Shows the server output in the Run tool window.
    */
   private fun showInRunToolWindow(title: String, processHandler: OSProcessHandler) =
-
     WriteAction.computeAndWait<ConsoleView, Throwable> {
       // Create run content descriptor
       val contentDescriptor = RunContentDescriptor(

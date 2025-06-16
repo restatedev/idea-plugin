@@ -21,7 +21,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   // Browser component for displaying the Restate UI
   private val browser = JBCefBrowser()
   private val browserPanel = JPanel(BorderLayout())
-  private var browserVisible = false
   private var messageBusConnection: MessageBusConnection? = null
 
   companion object {
@@ -32,7 +31,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     // Setup browser panel
     browserPanel.add(browser.component, BorderLayout.CENTER)
     browserPanel.preferredSize = Dimension(800, 600)
-    browserPanel.isVisible = false
 
     // Subscribe to server events using the message bus
     messageBusConnection = project.messageBus.connect()
@@ -69,17 +67,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     return toolBar.component
   }
 
-  /**
-   * Reloads the browser content.
-   */
-  private fun reloadUI() {
-    ApplicationManager.getApplication().invokeLater {
-      if (browserVisible) {
-        browser.cefBrowser.reload()
-      }
-    }
-  }
-
   fun getContent(): JComponent {
     val mainPanel = JPanel(BorderLayout())
     mainPanel.add(createToolbar(), BorderLayout.NORTH)
@@ -92,27 +79,26 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     ApplicationManager.getApplication().invokeLater {
       // Load the Restate UI in the embedded browser
       browser.loadURL("http://localhost:9070")
-
-      // Make the browser panel visible if it's not already
-      if (!browserVisible) {
-        browserPanel.isVisible = true
-        browserVisible = true
-
-        // Refresh the UI to show the browser panel
-        toolWindow.component.revalidate()
-        toolWindow.component.repaint()
-      }
+      toolWindow.component.revalidate()
+      toolWindow.component.repaint()
     }
   }
 
   private fun closeUI() {
     ApplicationManager.getApplication().invokeLater {
-      if (browserVisible) {
-        browserPanel.isVisible = false
-        browserVisible = false
-        toolWindow.component.revalidate()
-        toolWindow.component.repaint()
-      }
+      // TODO
+    }
+  }
+
+  /**
+   * Reloads the browser content.
+   */
+  private fun reloadUI() {
+    ApplicationManager.getApplication().invokeLater {
+      browser.loadURL("http://localhost:9070")
+      browser.cefBrowser.reload()
+      toolWindow.component.revalidate()
+      toolWindow.component.repaint()
     }
   }
 }
