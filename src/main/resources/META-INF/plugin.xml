@@ -14,10 +14,11 @@
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
     IntelliJ IDEA plugin for Restate, a runtime for building distributed applications.<br>
+    With this plugin you can easily:<br>
     <ul>
-      <li>Create new Restate projects with Java or Kotlin</li>
-      <li>Start and stop Restate containers</li>
-      <li>Open the Restate UI directly from the IDE</li>
+      <li>Create new Java or Kotlin Restate projects using 'New Project'</li>
+      <li>Start and stop Restate using the 'Start Restate Server' action</li>
+      <li>Browse the Restate UI directly from the IDE</li>
     </ul>
   ]]></description>
 

@@ -4,11 +4,11 @@ import com.intellij.openapi.util.IconLoader
 
 object RestateIcons {
   @JvmField
-  val Restate = IconLoader.getIcon("/icons/pluginIcon.svg", javaClass)
+  val Restate = IconLoader.getIcon("/icons/toolWindowIcon.svg", javaClass)
   @JvmField
-  val StartServer = Restate
+  val StartServer = IconLoader.getIcon("/icons/toolWindowIcon.svg", javaClass)
   @JvmField
-  val ToolWindow = Restate
+  val ToolWindow = IconLoader.getIcon("/icons/toolWindowIcon.svg", javaClass)
   @JvmField
-  val ProjectGenerator = Restate
+  val ProjectGenerator = IconLoader.getIcon("/icons/toolWindowIcon.svg", javaClass)
 }
