@@ -1,12 +1,14 @@
-package com.example.restate.runconfiguration
+package com.example.restate
 
+import com.example.restate.runconfiguration.RestateExecutionListener
+import com.example.restate.servermanager.RestateServerManager
 import com.intellij.execution.ExecutionManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.diagnostic.Logger
 
 /**
- * Registers the RestateExecutionListener when a project is opened.
+ * Registers the RestateExecutionListener and RestateServerManager when a project is opened.
  */
 class RestatePluginStartupActivity : ProjectActivity {
 
@@ -24,5 +26,10 @@ class RestatePluginStartupActivity : ProjectActivity {
             RestateExecutionListener(project)
         )
         LOG.info("RestateExecutionListener subscribed to ExecutionManager.EXECUTION_TOPIC.")
+
+        // Create and register the RestateServerManager
+        val serverManager = RestateServerManager(project)
+        project.putUserData(RestateServerManager.RESTATE_SERVER_MANAGER_KEY, serverManager)
+        LOG.info("RestateServerManager registered with project.")
     }
 }

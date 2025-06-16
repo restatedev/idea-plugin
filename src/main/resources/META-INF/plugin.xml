@@ -42,7 +42,8 @@
 
         <moduleBuilder builderClass="com.example.restate.project.RestateModuleProjectGenerator" />
 
-        <postStartupActivity implementation="com.example.restate.runconfiguration.RestatePluginStartupActivity"/>
+        <postStartupActivity implementation="com.example.restate.RestatePluginStartupActivity"/>
+
         <notificationGroup id="Restate Plugin Notifications"
                            displayType="BALLOON"
                            key="notification.group.name"/>
