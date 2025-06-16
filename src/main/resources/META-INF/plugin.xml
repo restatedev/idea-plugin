@@ -37,10 +37,10 @@
                     anchor="right"
                     factoryClass="com.example.restate.toolwindow.RestateToolWindowFactory"/>
 
-        <!-- Register the Restate Java Gradle project template -->
-        <directoryProjectGenerator implementation="com.example.restate.project.RestateJavaGradleProjectGenerator"/>
+        <!-- Register the Restate project template -->
+        <directoryProjectGenerator implementation="com.example.restate.project.RestateProjectGenerator"/>
 
-        <moduleBuilder builderClass="com.example.restate.project.RestateJavaGradleModuleProjectGenerator" />
+        <moduleBuilder builderClass="com.example.restate.project.RestateModuleProjectGenerator" />
 
         <postStartupActivity implementation="com.example.restate.runconfiguration.RestatePluginStartupActivity"/>
         <notificationGroup id="Restate Plugin Notifications"
