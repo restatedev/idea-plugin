@@ -9,23 +9,48 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.util.messages.MessageBusConnection
 import java.awt.BorderLayout
+import java.awt.CardLayout
 import java.awt.Dimension
 import javax.swing.JComponent
+import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.SwingConstants
 
 /**
  * Tool window for displaying the Restate UI.
  */
 class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
+  // Constants for card layout
+  private val BROWSER_PANEL = "BROWSER_PANEL"
+  private val LABEL_PANEL = "LABEL_PANEL"
+
   // Browser component for displaying the Restate UI
   private val browser = JBCefBrowser()
   private val browserPanel = JPanel(BorderLayout())
+
+  // Label component for displaying the "Start the Restate server first" message
+  private val startServerLabel = JLabel("Start the Restate server first")
+  private val labelPanel = JPanel(BorderLayout())
+
+  // Content panel with card layout to switch between browser and label
+  private val contentPanel = JPanel(CardLayout())
+
   private var messageBusConnection: MessageBusConnection? = null
 
   init {
     // Setup browser panel
     browserPanel.add(browser.component, BorderLayout.CENTER)
-    browserPanel.preferredSize = Dimension(800, 600)
+
+    // Setup label panel
+    startServerLabel.horizontalAlignment = SwingConstants.CENTER
+    labelPanel.add(startServerLabel, BorderLayout.CENTER)
+
+    // Add panels to the content panel with card layout
+    contentPanel.add(browserPanel, BROWSER_PANEL)
+    contentPanel.add(labelPanel, LABEL_PANEL)
+
+    // Initially show the label panel
+    (contentPanel.layout as CardLayout).show(contentPanel, LABEL_PANEL)
 
     // Subscribe to server events using the message bus
     messageBusConnection = project.messageBus.connect()
@@ -65,7 +90,7 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   fun getContent(): JComponent {
     val mainPanel = JPanel(BorderLayout())
     mainPanel.add(createToolbar(), BorderLayout.NORTH)
-    mainPanel.add(browserPanel, BorderLayout.CENTER)
+    mainPanel.add(contentPanel, BorderLayout.CENTER)
     return mainPanel
   }
 
@@ -73,6 +98,8 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     ApplicationManager.getApplication().invokeLater {
       browser.loadURL("http://localhost:9070")
       browser.cefBrowser.reload()
+      // Show the browser panel
+      (contentPanel.layout as CardLayout).show(contentPanel, BROWSER_PANEL)
       toolWindow.component.revalidate()
       toolWindow.component.repaint()
     }
@@ -80,7 +107,10 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
 
   private fun closeUI() {
     ApplicationManager.getApplication().invokeLater {
-      // TODO
+      // Show the label panel
+      (contentPanel.layout as CardLayout).show(contentPanel, LABEL_PANEL)
+      toolWindow.component.revalidate()
+      toolWindow.component.repaint()
     }
   }
 }
