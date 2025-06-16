@@ -1,5 +1,6 @@
 package com.example.restate.servermanager
 
+import com.example.restate.RestateNotifications.showNotification
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
@@ -9,8 +10,10 @@ import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -33,8 +36,7 @@ import java.util.concurrent.TimeUnit
  */
 class RestateServerManager(private val project: Project) {
   private var serverRunning = false
-  private var processHandler: ProcessHandler? = null
-  private var consoleView: ConsoleView? = null
+  private var consoleView = createConsoleView()
   private val messageBus: MessageBus = project.messageBus
 
   companion object {
@@ -289,33 +291,37 @@ class RestateServerManager(private val project: Project) {
   /**
    * Shows the server output in the Run tool window.
    */
-  private fun showInRunToolWindow(title: String) {
-    val executor = DefaultRunExecutor.getRunExecutorInstance()
+  private fun showInRunToolWindow(title: String, processHandler: OSProcessHandler) =
 
-    // Create console view if it doesn't exist
-    if (consoleView == null) {
-      consoleView = createConsoleView()
+    WriteAction.computeAndWait<ConsoleView, Throwable> {
+      // Create run content descriptor
+      val contentDescriptor = RunContentDescriptor(
+        null,
+        processHandler,
+        consoleView.component,
+        title
+      )
+
+      // Show in Run tool window
+      RunContentManager.getInstance(project).showRunContent(
+        DefaultRunExecutor.getRunExecutorInstance(),
+        contentDescriptor
+      )
+
+      consoleView
     }
 
-    // Create run content descriptor
-    val contentDescriptor = RunContentDescriptor(
-      null,
-      processHandler,
-      consoleView!!.component,
-      title
-    )
 
-    // Show in Run tool window
-    RunContentManager.getInstance(project).showRunContent(
-      executor,
-      contentDescriptor
-    )
+  fun startServer() {
+    ApplicationManager.getApplication().executeOnPooledThread {
+      this.startServerInner()
+    }
   }
 
   /**
    * Starts the Restate server.
    */
-  fun startServer() {
+  fun startServerInner() {
     if (serverRunning) {
       return
     }
@@ -323,102 +329,66 @@ class RestateServerManager(private val project: Project) {
       LOG.info("Starting Restate server")
 
       // Create console view if it doesn't exist
-      if (consoleView == null) {
-        consoleView = createConsoleView()
-      } else {
-        consoleView?.clear()
-      }
+      consoleView.clear()
 
       // Print initial message
-      consoleView?.print("Starting Restate server...\n", ConsoleViewContentType.NORMAL_OUTPUT)
+      consoleView.print("Starting Restate server...\n", ConsoleViewContentType.NORMAL_OUTPUT)
 
-      // Run potentially blocking operations in a background thread
-      try {
-        // Download the binary if it doesn't exist or if we want to check for updates
-        val binaryPath = getBinaryPath()
-        if (shouldCheckForUpdates()) {
-          consoleView?.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
-          downloadLatestRelease(project)
-          consoleView?.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
+      // Download the binary if it doesn't exist or if we want to check for updates
+      val binaryPath = getBinaryPath()
+      if (shouldCheckForUpdates()) {
+        consoleView.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
+        downloadLatestRelease(project)
+        consoleView.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
+      }
+
+      // Start the server process
+      val runCmd = GeneralCommandLine(
+        binaryPath.toString(),
+      )
+
+      val processHandler =
+        ProcessHandlerFactory.getInstance()
+          .createColoredProcessHandler(runCmd)
+      if (processHandler is KillableProcessHandler) {
+        processHandler.setShouldKillProcessSoftly(true)
+      }
+
+      // Show in Run tool window
+      showInRunToolWindow("Restate Server", processHandler)
+
+      // Attach process to console
+      consoleView.attachToProcess(processHandler)
+
+      // Add a process listener to monitor the server
+      processHandler.addProcessListener(object : ProcessListener {
+        override fun startNotified(event: ProcessEvent) {}
+
+        override fun processTerminated(event: ProcessEvent) {
+          LOG.info("Restate server process terminated with exit code: ${event.exitCode}")
+          consoleView.print(
+            "\nRestate server process terminated with exit code: ${event.exitCode}\n",
+            ConsoleViewContentType.SYSTEM_OUTPUT
+          )
+
+          serverRunning = false
+          notifyServerStopped()
         }
 
-        // Start the server process on the EDT to ensure thread safety with Swing components
-        ApplicationManager.getApplication().invokeLater {
-          try {
-            // Start the server process
-            val runCmd = GeneralCommandLine(
-              binaryPath.toString(),
-            )
-
-            processHandler =
-              ProcessHandlerFactory.getInstance()
-                .createColoredProcessHandler(runCmd)
-            if (processHandler is KillableProcessHandler) {
-              (processHandler as KillableProcessHandler).setShouldKillProcessSoftly(true)
-            }
-
-            // Show in Run tool window
-            showInRunToolWindow("Restate Server")
-
-            // Attach process to console
-            consoleView?.attachToProcess(processHandler!!)
-
-            // Add a process listener to monitor the server
-            processHandler?.addProcessListener(object : ProcessListener {
-              override fun startNotified(event: ProcessEvent) {}
-
-              override fun processTerminated(event: ProcessEvent) {
-                LOG.info("Restate server process terminated with exit code: ${event.exitCode}")
-                consoleView?.print(
-                  "\nRestate server process terminated with exit code: ${event.exitCode}\n",
-                  ConsoleViewContentType.SYSTEM_OUTPUT
-                )
-
-                serverRunning = false
-                notifyServerStopped()
-              }
-
-              override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                // The console view will handle the text automatically since we attached the process
-
-                // Detect when the server is ready
-                val text = event.text
-                if (text.contains("Server listening")) {
-                  LOG.info("Restate server is ready")
-                  notifyServerStarted()
-                }
-              }
-            })
-
-            // Start the process
-            processHandler?.startNotify()
-
-            serverRunning = true
-          } catch (e: Exception) {
-            LOG.error("Error starting Restate server", e)
-            serverRunning = false
-
-            // Log the error
-            LOG.error("Failed to start Restate server: ${e.message}")
-
-            // Display error in the console
-            consoleView?.print(
-              "\nERROR: Failed to start Restate server: ${e.message}\n",
-              ConsoleViewContentType.ERROR_OUTPUT
-            )
+        override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+          // Detect when the server is ready
+          val text = event.text
+          if (text.contains("Server listening")) {
+            LOG.info("Restate server is ready")
+            notifyServerStarted()
           }
         }
-      } catch (e: Exception) {
-        LOG.error("Error in background thread while starting server", e)
+      })
 
-        serverRunning = false
+      // Start the process
+      processHandler.startNotify()
 
-        // Display error in the console
-        consoleView?.print(
-          "\nERROR: Failed to start Restate server: ${e.message}\n",
-          ConsoleViewContentType.ERROR_OUTPUT
-        )
-      }
+      serverRunning = true
     } catch (e: Exception) {
       LOG.error("Error starting Restate server", e)
       serverRunning = false
@@ -427,9 +397,16 @@ class RestateServerManager(private val project: Project) {
       LOG.error("Failed to start Restate server: ${e.message}")
 
       // Display error in the console
-      consoleView?.print(
+      consoleView.print(
         "\nERROR: Failed to start Restate server: ${e.message}\n",
         ConsoleViewContentType.ERROR_OUTPUT
+      )
+      // Display also notification
+      showNotification(
+        project,
+        "Restate-server startup Failed",
+        "Error when trying to startup restate-server: ${e.message}",
+        NotificationType.ERROR
       )
     }
   }

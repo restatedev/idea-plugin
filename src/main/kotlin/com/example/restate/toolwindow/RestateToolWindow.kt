@@ -1,6 +1,8 @@
 package com.example.restate.toolwindow
 
 import com.example.restate.servermanager.RestateServerTopic
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -40,13 +42,47 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
       }
 
       override fun onServerStopped() {
-       closeUI()
+        closeUI()
       }
     })
   }
 
+  /**
+   * Creates a toolbar with actions for the Restate UI.
+   */
+  private fun createToolbar(): JComponent {
+    val actionGroup = DefaultActionGroup().apply {
+      add(object : AnAction("Reload", "Reload the Restate UI", AllIcons.Actions.Refresh) {
+        override fun actionPerformed(e: AnActionEvent) {
+          reloadUI()
+        }
+      })
+    }
+
+    val toolBar = ActionManager.getInstance().createActionToolbar(
+      ActionPlaces.TOOLBAR,
+      actionGroup,
+      true
+    )
+    toolBar.targetComponent = browser.component
+
+    return toolBar.component
+  }
+
+  /**
+   * Reloads the browser content.
+   */
+  private fun reloadUI() {
+    ApplicationManager.getApplication().invokeLater {
+      if (browserVisible) {
+        browser.cefBrowser.reload()
+      }
+    }
+  }
+
   fun getContent(): JComponent {
     val mainPanel = JPanel(BorderLayout())
+    mainPanel.add(createToolbar(), BorderLayout.NORTH)
     mainPanel.add(browserPanel, BorderLayout.CENTER)
     return mainPanel
   }
@@ -71,7 +107,7 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
 
   private fun closeUI() {
     ApplicationManager.getApplication().invokeLater {
-    if (browserVisible) {
+      if (browserVisible) {
         browserPanel.isVisible = false
         browserVisible = false
         toolWindow.component.revalidate()
