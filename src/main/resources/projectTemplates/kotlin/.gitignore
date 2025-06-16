@@ -30,6 +30,9 @@ build
 
 *.iml
 
+# Ignore K2 cache
+.kotlin
+
 # Unignore the gradle wrapper
 !gradle/wrapper/gradle-wrapper.jar
 
