@@ -4,7 +4,6 @@ import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.jcef.JBCefBrowser
@@ -22,10 +21,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   private val browser = JBCefBrowser()
   private val browserPanel = JPanel(BorderLayout())
   private var messageBusConnection: MessageBusConnection? = null
-
-  companion object {
-    private val LOG = Logger.getInstance(RestateToolWindow::class.java)
-  }
 
   init {
     // Setup browser panel
@@ -52,7 +47,7 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     val actionGroup = DefaultActionGroup().apply {
       add(object : AnAction("Reload", "Reload the Restate UI", AllIcons.Actions.Refresh) {
         override fun actionPerformed(e: AnActionEvent) {
-          reloadUI()
+          openUI()
         }
       })
     }
@@ -75,10 +70,9 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   }
 
   private fun openUI() {
-    // Ensure UI operations are performed on the EDT
     ApplicationManager.getApplication().invokeLater {
-      // Load the Restate UI in the embedded browser
       browser.loadURL("http://localhost:9070")
+      browser.cefBrowser.reload()
       toolWindow.component.revalidate()
       toolWindow.component.repaint()
     }
@@ -87,18 +81,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   private fun closeUI() {
     ApplicationManager.getApplication().invokeLater {
       // TODO
-    }
-  }
-
-  /**
-   * Reloads the browser content.
-   */
-  private fun reloadUI() {
-    ApplicationManager.getApplication().invokeLater {
-      browser.loadURL("http://localhost:9070")
-      browser.cefBrowser.reload()
-      toolWindow.component.revalidate()
-      toolWindow.component.repaint()
     }
   }
 }
