@@ -16,6 +16,7 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.toCanonicalPath
 import com.intellij.util.download.DownloadableFileService
@@ -341,10 +342,25 @@ class RestateServerManager(private val project: Project) {
         consoleView.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
       }
 
-      // Start the server process
-      val runCmd = GeneralCommandLine(
-        binaryPath.toString(),
-      )
+      // Create restate-data directory in project root
+      val projectRootDir = project.guessProjectDir()
+      val runCmd = if (projectRootDir != null) {
+        val restateDataDir = Paths.get(projectRootDir.path, "restate-data")
+        Files.createDirectories(restateDataDir)
+
+        // Start the server process providing the base dir
+        GeneralCommandLine(
+          binaryPath.toString(),
+          "--base-dir", restateDataDir.toString(),
+          "--node-name", "dev-cluster"
+        )
+      } else {
+        // Couldn't compute the base dir!
+        GeneralCommandLine(
+          binaryPath.toString(),
+          "--node-name", "dev-cluster"
+        )
+      }
 
       val processHandler =
         ProcessHandlerFactory.getInstance()
