@@ -2,6 +2,10 @@ package com.example.restate.toolwindow
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.toCanonicalPath
+import com.intellij.util.download.DownloadableFileService
+import com.intellij.util.download.DownloadableFileSetDescription
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.kohsuke.github.GitHub
@@ -48,7 +52,7 @@ class RestateServerManager {
      * @return The path to the downloaded binary
      * @throws Exception if the download fails
      */
-    fun downloadLatestRelease(): Path {
+    fun downloadLatestRelease(project: Project): Path {
         LOG.info("Downloading latest Restate release")
 
         try {
@@ -71,19 +75,32 @@ class RestateServerManager {
                 it.name.contains(arch) 
             } ?: throw Exception("Could not find appropriate release asset for your platform")
 
+            // Now use Intellij Platform downloader.
+            val downloaderService = DownloadableFileService.getInstance()
+            val downloadFileDescription = downloaderService.createFileDescription(
+                asset.browserDownloadUrl,
+                asset.name
+            )
+            val downloader = downloaderService.createDownloader(
+                listOf(downloadFileDescription),
+                "Restate Server"
+            )
+
             LOG.info("Downloading Restate binary from: ${asset.browserDownloadUrl}")
 
             // Create a temporary directory for the download
             val tempDir = Files.createTempDirectory("restate-download")
-            val tempFile = tempDir.resolve("restate-server.tar.xz")
+            val result = downloader.downloadWithBackgroundProgress(tempDir.toCanonicalPath(), project)
+                .get()
+            val downloadedFile =   result?.get(0)?.first?.inputStream?: throw Exception("No file was downloaded!")
 
             try {
                 // Download the tar.xz file
-                val url = URI.create(asset.browserDownloadUrl).toURL()
-                url.openConnection().getInputStream().use { input ->
-                    Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
-                }
-                LOG.info("Downloaded archive to: $tempFile")
+//                val url = URI.create(asset.browserDownloadUrl).toURL()
+//                url.openConnection().getInputStream().use { input ->
+//                    Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
+//                }
+//                LOG.info("Downloaded archive to: $tempFile")
 
                 // Extract the tar.xz file
                 val extractDir = tempDir.resolve("extracted")
@@ -94,7 +111,7 @@ class RestateServerManager {
                 // Create a chain of streams to handle the XZ and TAR formats
                 var extractedBinary: Path? = null
 
-                BufferedInputStream(FileInputStream(tempFile.toFile())).use { fileIn ->
+                BufferedInputStream(downloadedFile).use { fileIn ->
                     XZCompressorInputStream(fileIn).use { xzIn ->
                         TarArchiveInputStream(xzIn).use { tarIn ->
                             var entry = tarIn.nextEntry

@@ -1,14 +1,11 @@
 package com.example.restate.project
 
-import com.intellij.facet.ui.ValidationResult
 import com.intellij.icons.AllIcons
 import com.intellij.ide.util.projectWizard.WebProjectTemplate
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.platform.DirectoryProjectGenerator
 import com.intellij.platform.ProjectGeneratorPeer
 import javax.swing.Icon
 import javax.swing.JComponent

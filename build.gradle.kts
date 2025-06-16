@@ -30,6 +30,9 @@ dependencies {
   // GitHub API for Java
   implementation("org.kohsuke:github-api:1.315")
 
+  // Restate Admin API
+  implementation("dev.restate:admin-client:2.1.0")
+
   // Apache Commons Compression for tar.xz extraction
   implementation("org.apache.commons:commons-compress:1.25.0")
   // XZ for Java for LZMA/XZ compression support

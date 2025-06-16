@@ -42,11 +42,10 @@
 
         <moduleBuilder builderClass="com.example.restate.project.RestateJavaGradleModuleProjectGenerator" />
 
-        <runConfigurationExtension implementation="com.example.restate.runconfiguration.RestateRunConfigurationExtension" runnerId="Java"/>
-
+        <postStartupActivity implementation="com.example.restate.runconfiguration.RestatePluginStartupActivity"/>
         <notificationGroup id="Restate Plugin Notifications"
                            displayType="BALLOON"
-                           key="restate.notification"/>
+                           key="notification.group.name"/>
     </extensions>
 
     <actions>

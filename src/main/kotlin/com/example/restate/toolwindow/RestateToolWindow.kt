@@ -4,6 +4,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.filters.TextConsoleBuilderImpl
+import com.intellij.execution.process.KillableProcessHandler
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
@@ -20,8 +21,6 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.jcef.JBCefBrowser
 import java.awt.BorderLayout
 import java.awt.Dimension
-import java.awt.FlowLayout
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -31,8 +30,6 @@ import javax.swing.JPanel
 class RestateToolWindow(private val project: Project, private val toolWindow: ToolWindow) {
   private var serverRunning = false
   private var processHandler: ProcessHandler? = null
-  private val LOG = Logger.getInstance(RestateToolWindow::class.java)
-  private val startStopButton = JButton("Start Restate")
   private var consoleView: ConsoleView? = null
   private var runContentDescriptor: RunContentDescriptor? = null
 
@@ -45,18 +42,11 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
   private val serverManager = RestateServerManager()
 
   companion object {
+    private val LOG = Logger.getInstance(RestateToolWindow::class.java)
     val RESTATE_TOOL_WINDOW = Key.create<RestateToolWindow>("restateToolWindow")
   }
 
   init {
-    startStopButton.addActionListener {
-      if (serverRunning) {
-        stopServer()
-      } else {
-        startServer()
-      }
-    }
-
     // Setup browser panel
     browserPanel.add(browser.component, BorderLayout.CENTER)
     browserPanel.preferredSize = Dimension(800, 600)
@@ -67,19 +57,7 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
 
   fun getContent(): JComponent {
     val mainPanel = JPanel(BorderLayout())
-
-    // Create top panel for controls
-    val topPanel = JPanel(BorderLayout())
-
-    val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
-    buttonPanel.add(startStopButton)
-
-    topPanel.add(buttonPanel, BorderLayout.WEST)
-
-    // Add the top panel and browser panel to the main panel
-    mainPanel.add(topPanel, BorderLayout.NORTH)
     mainPanel.add(browserPanel, BorderLayout.CENTER)
-
     return mainPanel
   }
 
@@ -136,7 +114,7 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
       ApplicationManager.getApplication().executeOnPooledThread {
         try {
           // Use the server manager to download the latest release
-          serverManager.downloadLatestRelease()
+          serverManager.downloadLatestRelease(project)
 
           LOG.info("Successfully updated Restate binary")
 
@@ -188,7 +166,7 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
               consoleView?.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
             }
 
-            serverManager.downloadLatestRelease()
+            serverManager.downloadLatestRelease(project)
 
             ApplicationManager.getApplication().invokeLater {
               consoleView?.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
@@ -203,7 +181,12 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
                 binaryPath.toString(),
               )
 
-              processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(runCmd)
+              processHandler =
+                ProcessHandlerFactory.getInstance()
+                .createColoredProcessHandler(runCmd)
+              if (processHandler is KillableProcessHandler) {
+                (processHandler as KillableProcessHandler).setShouldKillProcessSoftly(true)
+              }
 
               // Show in Run tool window
               showInRunToolWindow("Restate Server")
@@ -223,7 +206,6 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
                   // Update UI on the EDT
                   ApplicationManager.getApplication().invokeLater {
                     serverRunning = false
-                    startStopButton.text = "Start Restate"
 
                     // Hide the browser panel when the server is stopped
                     if (browserVisible) {
@@ -250,11 +232,9 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
               processHandler?.startNotify()
 
               serverRunning = true
-              startStopButton.text = "Stop Restate"
             } catch (e: Exception) {
               LOG.error("Error starting Restate server", e)
               serverRunning = false
-              startStopButton.text = "Start Restate"
 
               // Log the error
               LOG.error("Failed to start Restate server: ${e.message}")
@@ -270,7 +250,6 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
           // Update UI on the EDT
           ApplicationManager.getApplication().invokeLater {
             serverRunning = false
-            startStopButton.text = "Start Restate"
 
             // Display error in the console
             consoleView?.print("\nERROR: Failed to start Restate server: ${e.message}\n", 
@@ -281,65 +260,12 @@ class RestateToolWindow(private val project: Project, private val toolWindow: To
     } catch (e: Exception) {
       LOG.error("Error starting Restate server", e)
       serverRunning = false
-      startStopButton.text = "Start Restate"
 
       // Log the error
       LOG.error("Failed to start Restate server: ${e.message}")
 
       // Display error in the console
       consoleView?.print("\nERROR: Failed to start Restate server: ${e.message}\n", 
-                        ConsoleViewContentType.ERROR_OUTPUT)
-    }
-  }
-
-  private fun stopServer() {
-    try {
-      LOG.info("Stopping Restate server")
-
-      // Print message to console
-      consoleView?.print("\nStopping Restate server...\n", ConsoleViewContentType.SYSTEM_OUTPUT)
-
-      // Store a local reference to the process handler
-      val currentProcessHandler = processHandler
-
-      // Run the blocking operations in a background thread
-      ApplicationManager.getApplication().executeOnPooledThread {
-        try {
-          currentProcessHandler?.destroyProcess()
-
-          // Wait for the process to terminate
-          if (currentProcessHandler != null && !currentProcessHandler.waitFor(5000)) {
-            LOG.warn("Restate server process did not terminate gracefully, trying again")
-            // Call destroyProcess again as a best effort
-            currentProcessHandler.destroyProcess()
-
-            // Wait a bit more
-            if (!currentProcessHandler.waitFor(2000)) {
-              LOG.warn("Process still not terminated after second attempt")
-            }
-          }
-
-          // Update UI on the EDT
-          ApplicationManager.getApplication().invokeLater {
-            serverRunning = false
-            startStopButton.text = "Start Restate"
-
-            // Hide the browser panel when the server is stopped
-            if (browserVisible) {
-              browserPanel.isVisible = false
-              browserVisible = false
-              toolWindow.component.revalidate()
-              toolWindow.component.repaint()
-            }
-          }
-        } catch (e: Exception) {
-          LOG.error("Error in background thread while stopping server", e)
-        }
-      }
-
-    } catch (e: Exception) {
-      LOG.error("Error stopping Restate server", e)
-      consoleView?.print("\nERROR: Failed to stop Restate server: ${e.message}\n", 
                         ConsoleViewContentType.ERROR_OUTPUT)
     }
   }
