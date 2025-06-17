@@ -1,5 +1,6 @@
 package com.example.restate.servermanager
 
+import com.example.restate.RestateIcons
 import com.example.restate.RestateNotifications.showNotification
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
@@ -21,6 +22,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.toCanonicalPath
 import com.intellij.util.download.DownloadableFileService
 import com.intellij.util.messages.MessageBus
+import com.example.restate.settings.RestateSettings
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.kohsuke.github.GitHubBuilder
@@ -37,7 +39,6 @@ import java.util.concurrent.TimeUnit
  */
 class RestateServerManager(private val project: Project) {
   private var serverRunning = false
-  private var consoleView = createConsoleView()
   private val messageBus: MessageBus = project.messageBus
 
   companion object {
@@ -64,13 +65,13 @@ class RestateServerManager(private val project: Project) {
   }
 
   // Binary paths
-  private val RESTATE_BINARY_DIR = Paths.get(PathManager.getSystemPath(), "restate-plugin")
-  private val RESTATE_BINARY_PATH: Path
-    get() = RESTATE_BINARY_DIR.resolve("restate-server")
+  private val RESTATE_PLUGIN_DIR = Paths.get(PathManager.getSystemPath(), "restate-plugin")
+  private val RESTATE_SERVER_DOWNLOAD_PATH: Path
+    get() = RESTATE_PLUGIN_DIR.resolve("restate-server")
 
   init {
     // Create binary directory if it doesn't exist
-    Files.createDirectories(RESTATE_BINARY_DIR)
+    Files.createDirectories(RESTATE_PLUGIN_DIR)
   }
 
   /**
@@ -174,13 +175,13 @@ class RestateServerManager(private val project: Project) {
         LOG.info("Found extracted binary at: $extractedBinary")
 
         // Copy the binary to the final location
-        Files.copy(extractedBinary, RESTATE_BINARY_PATH, StandardCopyOption.REPLACE_EXISTING)
+        Files.copy(extractedBinary, RESTATE_SERVER_DOWNLOAD_PATH, StandardCopyOption.REPLACE_EXISTING)
 
         // Make the binary executable
-        makeExecutable(RESTATE_BINARY_PATH)
+        makeExecutable(RESTATE_SERVER_DOWNLOAD_PATH)
 
-        LOG.info("Successfully installed Restate binary to: $RESTATE_BINARY_PATH")
-        return RESTATE_BINARY_PATH
+        LOG.info("Successfully installed Restate binary to: $RESTATE_SERVER_DOWNLOAD_PATH")
+        return RESTATE_SERVER_DOWNLOAD_PATH
       } finally {
         // Clean up temporary files
         try {
@@ -204,22 +205,13 @@ class RestateServerManager(private val project: Project) {
    */
   fun shouldCheckForUpdates(): Boolean {
     // Check for updates once a day
-    val file = RESTATE_BINARY_PATH.toFile()
+    val file = RESTATE_SERVER_DOWNLOAD_PATH.toFile()
     if (!file.exists()) return true
 
     val lastModified = file.lastModified()
     val oneDayAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
 
     return lastModified < oneDayAgo
-  }
-
-  /**
-   * Gets the path to the Restate server binary.
-   *
-   * @return The path to the binary
-   */
-  fun getBinaryPath(): Path {
-    return RESTATE_BINARY_PATH
   }
 
   /**
@@ -292,14 +284,15 @@ class RestateServerManager(private val project: Project) {
   /**
    * Shows the server output in the Run tool window.
    */
-  private fun showInRunToolWindow(title: String, processHandler: OSProcessHandler) =
+  private fun showInRunToolWindow(title: String, processHandler: OSProcessHandler, consoleView: ConsoleView) =
     WriteAction.computeAndWait<ConsoleView, Throwable> {
       // Create run content descriptor
       val contentDescriptor = RunContentDescriptor(
         null,
         processHandler,
         consoleView.component,
-        title
+        title,
+        RestateIcons.StartServer
       )
 
       // Show in Run tool window
@@ -323,23 +316,38 @@ class RestateServerManager(private val project: Project) {
    */
   fun startServerInner() {
     if (serverRunning) {
+      showNotification(
+        project,
+        "Restate is already running",
+        "Restate is already running, only one instance can be run at the same time",
+        NotificationType.INFORMATION
+      )
+
       return
     }
+
+    val consoleView = createConsoleView()
+
     try {
       LOG.info("Starting Restate server")
-
-      // Create console view if it doesn't exist
-      consoleView.clear()
 
       // Print initial message
       consoleView.print("Starting Restate server...\n", ConsoleViewContentType.NORMAL_OUTPUT)
 
+      // Get settings
+      val settings = RestateSettings.getInstance()
+
       // Download the binary if it doesn't exist or if we want to check for updates
-      val binaryPath = getBinaryPath()
-      if (shouldCheckForUpdates()) {
+      if (settings.downloadRestateServer && shouldCheckForUpdates()) {
         consoleView.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
         downloadLatestRelease(project)
         consoleView.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
+      }
+
+      val restateServerBinaryPath = if (settings.downloadRestateServer) {
+        RESTATE_SERVER_DOWNLOAD_PATH.toString()
+      } else {
+        "restate-server"
       }
 
       // Create restate-data directory in project root
@@ -348,18 +356,24 @@ class RestateServerManager(private val project: Project) {
         val restateDataDir = Paths.get(projectRootDir.path, "restate-data")
         Files.createDirectories(restateDataDir)
 
-        // Start the server process providing the base dir
-        GeneralCommandLine(
-          binaryPath.toString(),
+        // Create base command line
+     GeneralCommandLine(
+          restateServerBinaryPath,
           "--base-dir", restateDataDir.toString(),
           "--node-name", "dev-cluster"
         )
       } else {
         // Couldn't compute the base dir!
-        GeneralCommandLine(
-          binaryPath.toString(),
+       GeneralCommandLine(
+          restateServerBinaryPath,
           "--node-name", "dev-cluster"
         )
+      }
+
+      // Add environment variables if provided
+      val envVars = settings.getEnvironmentVariablesMap()
+      if (envVars.isNotEmpty()) {
+        runCmd.withEnvironment(envVars)
       }
 
       val processHandler =
@@ -370,7 +384,7 @@ class RestateServerManager(private val project: Project) {
       }
 
       // Show in Run tool window
-      showInRunToolWindow("Restate Server", processHandler)
+      showInRunToolWindow("Restate Server", processHandler, consoleView)
 
       // Attach process to console
       consoleView.attachToProcess(processHandler)
@@ -405,12 +419,9 @@ class RestateServerManager(private val project: Project) {
 
       serverRunning = true
     } catch (e: Exception) {
-      LOG.error("Error starting Restate server", e)
       serverRunning = false
 
-      // Log the error
-      LOG.error("Failed to start Restate server: ${e.message}")
-
+      LOG.warn("Error starting Restate server", e)
       // Display error in the console
       consoleView.print(
         "\nERROR: Failed to start Restate server: ${e.message}\n",

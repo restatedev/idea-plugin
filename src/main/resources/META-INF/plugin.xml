@@ -46,8 +46,15 @@
         <postStartupActivity implementation="com.example.restate.RestatePluginStartupActivity"/>
 
         <notificationGroup id="Restate Plugin Notifications"
-                           displayType="BALLOON"
-                           key="notification.group.name"/>
+                           displayType="BALLOON"/>
+
+        <!-- Register the Restate settings -->
+        <applicationService serviceImplementation="com.example.restate.settings.RestateSettings"/>
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.example.restate.settings.RestateSettingsConfigurable"
+            id="com.example.restate.settings.RestateSettingsConfigurable"
+            displayName="Restate"/>
     </extensions>
 
     <actions>
