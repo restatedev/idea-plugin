@@ -2,6 +2,7 @@ package com.example.restate.servermanager
 
 import com.example.restate.RestateIcons
 import com.example.restate.RestateNotifications.showNotification
+import com.example.restate.settings.RestateSettings
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
@@ -22,7 +23,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.toCanonicalPath
 import com.intellij.util.download.DownloadableFileService
 import com.intellij.util.messages.MessageBus
-import com.example.restate.settings.RestateSettings
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.kohsuke.github.GitHubBuilder
@@ -284,7 +284,11 @@ class RestateServerManager(private val project: Project) {
   /**
    * Shows the server output in the Run tool window.
    */
-  private fun showInRunToolWindow(title: String, processHandler: OSProcessHandler, consoleView: ConsoleView) =
+  private fun showInRunToolWindow(
+    processHandler: OSProcessHandler,
+    consoleView: ConsoleView,
+    title: String = "Restate Server"
+  ) =
     WriteAction.computeAndWait<ConsoleView, Throwable> {
       // Create run content descriptor
       val contentDescriptor = RunContentDescriptor(
@@ -357,14 +361,14 @@ class RestateServerManager(private val project: Project) {
         Files.createDirectories(restateDataDir)
 
         // Create base command line
-     GeneralCommandLine(
+        GeneralCommandLine(
           restateServerBinaryPath,
           "--base-dir", restateDataDir.toString(),
           "--node-name", "dev-cluster"
         )
       } else {
         // Couldn't compute the base dir!
-       GeneralCommandLine(
+        GeneralCommandLine(
           restateServerBinaryPath,
           "--node-name", "dev-cluster"
         )
@@ -384,7 +388,7 @@ class RestateServerManager(private val project: Project) {
       }
 
       // Show in Run tool window
-      showInRunToolWindow("Restate Server", processHandler, consoleView)
+      showInRunToolWindow(processHandler, consoleView)
 
       // Attach process to console
       consoleView.attachToProcess(processHandler)

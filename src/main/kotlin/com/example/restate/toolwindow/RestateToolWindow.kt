@@ -10,7 +10,6 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.util.messages.MessageBusConnection
 import java.awt.BorderLayout
 import java.awt.CardLayout
-import java.awt.Dimension
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel

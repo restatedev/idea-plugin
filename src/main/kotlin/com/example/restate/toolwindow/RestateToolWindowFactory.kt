@@ -1,6 +1,5 @@
 package com.example.restate.toolwindow
 
-import com.example.restate.RestateIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
