@@ -308,6 +308,7 @@ class RestateServerManager(private val project: Project) {
       consoleView
     }
 
+  fun isRunning() = serverRunning
 
   fun startServer() {
     ApplicationManager.getApplication().executeOnPooledThread {

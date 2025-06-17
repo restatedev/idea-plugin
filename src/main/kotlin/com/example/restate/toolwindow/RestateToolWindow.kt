@@ -1,5 +1,6 @@
 package com.example.restate.toolwindow
 
+import com.example.restate.servermanager.RestateServerManager
 import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
@@ -7,7 +8,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.jcef.JBCefBrowser
-import com.intellij.util.messages.MessageBusConnection
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import javax.swing.JComponent
@@ -34,8 +34,6 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
   // Content panel with card layout to switch between browser and label
   private val contentPanel = JPanel(CardLayout())
 
-  private var messageBusConnection: MessageBusConnection? = null
-
   init {
     // Setup browser panel
     browserPanel.add(browser.component, BorderLayout.CENTER)
@@ -48,20 +46,17 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     contentPanel.add(browserPanel, BROWSER_PANEL)
     contentPanel.add(labelPanel, LABEL_PANEL)
 
-    // Initially show the label panel
-    (contentPanel.layout as CardLayout).show(contentPanel, LABEL_PANEL)
-
     // Subscribe to server events using the message bus
-    messageBusConnection = project.messageBus.connect()
-    messageBusConnection?.subscribe(RestateServerTopic.TOPIC, object : RestateServerTopic {
-      override fun onServerStarted() {
-        openUI()
-      }
+    project.messageBus.connect()
+      .subscribe(RestateServerTopic.TOPIC, object : RestateServerTopic {
+        override fun onServerStarted() {
+          openUI()
+        }
 
-      override fun onServerStopped() {
-        closeUI()
-      }
-    })
+        override fun onServerStopped() {
+          closeUI()
+        }
+      })
   }
 
   /**
@@ -86,19 +81,27 @@ class RestateToolWindow(project: Project, private val toolWindow: ToolWindow) {
     return toolBar.component
   }
 
-  fun getContent(): JComponent {
+  fun getContent(project: Project): JComponent {
     val mainPanel = JPanel(BorderLayout())
     mainPanel.add(createToolbar(), BorderLayout.NORTH)
     mainPanel.add(contentPanel, BorderLayout.CENTER)
+
+    // Check the RestateServerManager to see if it's running or not
+    val serverManager = project.getUserData(RestateServerManager.RESTATE_SERVER_MANAGER_KEY)
+    if (serverManager?.isRunning() ?: false) {
+      (contentPanel.layout as CardLayout).show(contentPanel, BROWSER_PANEL)
+    } else {
+      (contentPanel.layout as CardLayout).show(contentPanel, LABEL_PANEL)
+    }
+
     return mainPanel
   }
 
   private fun openUI() {
     ApplicationManager.getApplication().invokeLater {
+      (contentPanel.layout as CardLayout).show(contentPanel, BROWSER_PANEL)
       browser.loadURL("http://localhost:9070")
       browser.cefBrowser.reload()
-      // Show the browser panel
-      (contentPanel.layout as CardLayout).show(contentPanel, BROWSER_PANEL)
       toolWindow.component.revalidate()
       toolWindow.component.repaint()
     }
