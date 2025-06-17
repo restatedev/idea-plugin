@@ -7,7 +7,7 @@ import com.intellij.ui.content.ContentFactory
 
 class RestateToolWindowFactory : ToolWindowFactory {
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-    val restateToolWindow = RestateToolWindow(project, toolWindow)
+    val restateToolWindow = RestateToolWindow(toolWindow)
     val contentFactory = ContentFactory.getInstance()
     val content = contentFactory.createContent(restateToolWindow.getContent(project), "Restate", false)
     toolWindow.contentManager.addContent(content)
