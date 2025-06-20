@@ -2,6 +2,7 @@ package com.example.restate.servermanager
 
 import com.example.restate.RestateIcons
 import com.example.restate.RestateNotifications.showNotification
+import com.example.restate.runconfiguration.RestateExecutionListener
 import com.example.restate.settings.RestateSettings
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
@@ -23,6 +24,10 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.toCanonicalPath
 import com.intellij.util.download.DownloadableFileService
 import com.intellij.util.messages.MessageBus
+import dev.restate.admin.api.DeploymentApi
+import dev.restate.admin.client.ApiClient
+import dev.restate.admin.model.RegisterDeploymentRequest
+import dev.restate.admin.model.RegisterDeploymentRequestAnyOf
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.kohsuke.github.GitHubBuilder
@@ -48,6 +53,39 @@ class RestateServerManager(private val project: Project) {
     // GitHub repository information
     private val REPO_OWNER = "restatedev"
     private val REPO_NAME = "restate"
+
+    private val deploymentApiClient = DeploymentApi(ApiClient().setHost("127.0.0.1").setPort(9070))
+
+    // --- Service Registration Logic ---
+    fun registerRestateService() {
+      val registerDeploymentRequest = RegisterDeploymentRequestAnyOf()
+      registerDeploymentRequest.uri = "http://localhost:9080"
+      registerDeploymentRequest.force = true
+
+      val maxRetries = 3
+      var retryCount = 0
+      var lastException: Exception? = null
+
+      while (retryCount < maxRetries) {
+        try {
+          deploymentApiClient.createDeployment(RegisterDeploymentRequest(registerDeploymentRequest))
+          return // Success, exit the function
+        } catch (e: Exception) {
+          lastException = e
+          LOG.info("Attempt ${retryCount + 1}/$maxRetries to register Restate service failed: ${e.message}")
+          retryCount++
+
+          if (retryCount < maxRetries) {
+            // Exponential backoff: wait longer between each retry
+            val delayMs = 100L * (1 shl retryCount)
+            Thread.sleep(delayMs)
+          }
+        }
+      }
+
+      // If we get here, all retries failed
+      throw lastException ?: RuntimeException("Failed to register Restate service after $maxRetries attempts")
+    }
   }
 
   /**
