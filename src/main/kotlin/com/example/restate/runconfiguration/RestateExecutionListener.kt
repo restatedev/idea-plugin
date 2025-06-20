@@ -1,6 +1,7 @@
 package com.example.restate.runconfiguration
 
 import com.example.restate.RestateNotifications.showNotification
+import com.example.restate.RestateNotifications.showNotificationWithActions
 import com.example.restate.servermanager.RestateServerManager
 import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.execution.ExecutionListener
@@ -11,12 +12,11 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
-import dev.restate.admin.api.DeploymentApi
-import dev.restate.admin.client.ApiClient
 
 class RestateExecutionListener(private val project: Project) : ExecutionListener {
 
@@ -71,12 +71,26 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
           )
           return@executeOnPooledThread
         }
-        if (!restateServerManager.isStarting()) {
-          // TODO ask for confirmation using notification
-          tryToStartServerAndRegister(runProfile, restateServerManager)
-        }
+
+        // Ask user if they want to start the restate server
+        showNotificationWithActions(
+          project,
+          "Restate Server Required",
+          "To interact with '${runProfile.name}' you need Restate server to be running. Would you like to start it now?",
+          NotificationType.INFORMATION,
+          object : AnAction("Start Server") {
+            override fun actionPerformed(e: AnActionEvent) {
+              tryToStartServerAndRegister(runProfile, restateServerManager)
+            }
+          },
+          object : AnAction("Cancel") {
+            override fun actionPerformed(e: AnActionEvent) {
+              // Do nothing, just close the notification
+            }
+          }
+        )
       }
-  }
+    }
 
   private fun tryToStartServerAndRegister(runProfile: RunProfile, restateServerManager: RestateServerManager) {
     val connection = project.messageBus.connect();

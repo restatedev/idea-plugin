@@ -2,7 +2,6 @@ package com.example.restate.servermanager
 
 import com.example.restate.RestateIcons
 import com.example.restate.RestateNotifications.showNotification
-import com.example.restate.runconfiguration.RestateExecutionListener
 import com.example.restate.settings.RestateSettings
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
