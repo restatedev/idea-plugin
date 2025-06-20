@@ -2,6 +2,7 @@ package com.example.restate.runconfiguration
 
 import com.example.restate.RestateNotifications.showNotification
 import com.example.restate.servermanager.RestateServerManager
+import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.process.ProcessAdapter
@@ -13,6 +14,7 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import dev.restate.admin.api.DeploymentApi
 import dev.restate.admin.client.ApiClient
 
@@ -40,13 +42,13 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
           LOG.info("Detected a Restate application: ${runProfile.name}. Output contains '$RESTATE_SERVER_STARTED_TEXT'")
 
           // Schedule service registration
-          onRestateServiceDeploymentStarted(runProfile)
+          onRestateServiceDeploymentStarted(runProfile, true)
         }
       }
     })
   }
 
-  private fun onRestateServiceDeploymentStarted(runProfile: RunProfile) =
+  private fun onRestateServiceDeploymentStarted(runProfile: RunProfile, tryToStartServer: Boolean) =
     ApplicationManager.getApplication().executeOnPooledThread {
       try {
         RestateServerManager.registerRestateService()
@@ -58,14 +60,35 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
           NotificationType.INFORMATION
         )
       } catch (e: Exception) {
-        LOG.warn("Failed to perform Restate service registration for ${runProfile.name}.", e)
-        showNotification(
-          project,
-          "Restate Registration Failed",
-          "Tried to auto-register profile '${runProfile.name}' but failed: ${e.message}",
-          NotificationType.WARNING
-        )
+        val restateServerManager = project.getUserData(RestateServerManager.RESTATE_SERVER_MANAGER_KEY)
+        if (!tryToStartServer || restateServerManager == null || restateServerManager.isStarting()) {
+          LOG.warn("Failed to perform Restate service registration for ${runProfile.name}.", e)
+          showNotification(
+            project,
+            "Restate Registration Failed",
+            "Tried to auto-register profile '${runProfile.name}' but failed. Please register manually. Reason: ${e.message}",
+            NotificationType.WARNING
+          )
+          return@executeOnPooledThread
+        }
+        if (!restateServerManager.isStarting()) {
+          // TODO ask for confirmation using notification
+          tryToStartServerAndRegister(runProfile, restateServerManager)
+        }
       }
+  }
+
+  private fun tryToStartServerAndRegister(runProfile: RunProfile, restateServerManager: RestateServerManager) {
+    val connection = project.messageBus.connect();
+    connection.subscribe(RestateServerTopic.TOPIC, object : RestateServerTopic {
+      override fun onServerStarted() {
+        onRestateServiceDeploymentStarted(runProfile, false)
+        connection.disconnect()
+      }
+
+      override fun onServerStopped() {}
+    })
+    restateServerManager.startServer()
   }
 
 }

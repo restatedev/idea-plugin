@@ -43,8 +43,10 @@ import java.util.concurrent.TimeUnit
  * Manages the Restate server binary, including downloading, updating, and running it.
  */
 class RestateServerManager(private val project: Project) {
-  private var serverRunning = false
   private val messageBus: MessageBus = project.messageBus
+
+  @Volatile
+  private var startRequested = false
 
   companion object {
     val RESTATE_SERVER_MANAGER_KEY = Key.create<RestateServerManager>("restateServerManager")
@@ -346,7 +348,7 @@ class RestateServerManager(private val project: Project) {
       consoleView
     }
 
-  fun isRunning() = serverRunning
+  fun isStarting() = startRequested
 
   fun startServer() {
     ApplicationManager.getApplication().executeOnPooledThread {
@@ -358,7 +360,7 @@ class RestateServerManager(private val project: Project) {
    * Starts the Restate server.
    */
   fun startServerInner() {
-    if (serverRunning) {
+    if (startRequested) {
       showNotification(
         project,
         "Restate is already running",
@@ -368,6 +370,7 @@ class RestateServerManager(private val project: Project) {
 
       return
     }
+    startRequested = true
 
     val consoleView = createConsoleView()
 
@@ -443,7 +446,7 @@ class RestateServerManager(private val project: Project) {
             ConsoleViewContentType.SYSTEM_OUTPUT
           )
 
-          serverRunning = false
+          startRequested = false
           notifyServerStopped()
         }
 
@@ -459,17 +462,15 @@ class RestateServerManager(private val project: Project) {
 
       // Start the process
       processHandler.startNotify()
-
-      serverRunning = true
     } catch (e: Exception) {
-      serverRunning = false
-
-      LOG.warn("Error starting Restate server", e)
       // Display error in the console
       consoleView.print(
         "\nERROR: Failed to start Restate server: ${e.message}\n",
         ConsoleViewContentType.ERROR_OUTPUT
       )
+      startRequested = false
+
+      LOG.warn("Error starting Restate server", e)
       // Display also notification
       showNotification(
         project,
