@@ -4,8 +4,8 @@ plugins {
   id("org.jetbrains.intellij.platform") version "2.5.0"
 }
 
-group = "com.example"
-version = "1.0-SNAPSHOT"
+group = "dev.restate"
+version = "0.0.1"
 
 repositories {
   mavenCentral()
