@@ -1,4 +1,4 @@
-package com.example.restate
+package dev.restate.idea
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType

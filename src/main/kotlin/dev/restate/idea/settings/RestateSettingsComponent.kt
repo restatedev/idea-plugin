@@ -1,4 +1,4 @@
-package com.example.restate.settings
+package dev.restate.idea.settings
 
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel

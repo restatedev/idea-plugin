@@ -1,10 +1,10 @@
-package com.example.restate.actions
+package dev.restate.idea.actions
 
-import com.example.restate.servermanager.RestateServerManager
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.Logger
+import dev.restate.idea.servermanager.RestateServerManager
 
 class StartRestateServerAction : AnAction() {
   companion object {

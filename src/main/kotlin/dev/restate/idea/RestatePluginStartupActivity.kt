@@ -1,11 +1,11 @@
-package com.example.restate
+package dev.restate.idea
 
-import com.example.restate.runconfiguration.RestateExecutionListener
-import com.example.restate.servermanager.RestateServerManager
 import com.intellij.execution.ExecutionManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import dev.restate.idea.runconfiguration.RestateExecutionListener
+import dev.restate.idea.servermanager.RestateServerManager
 
 /**
  * Registers the RestateExecutionListener and RestateServerManager when a project is opened.

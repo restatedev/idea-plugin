@@ -1,8 +1,5 @@
-package com.example.restate.servermanager
+package dev.restate.idea.servermanager
 
-import com.example.restate.RestateIcons
-import com.example.restate.RestateNotifications.showNotification
-import com.example.restate.settings.RestateSettings
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
@@ -27,6 +24,9 @@ import dev.restate.admin.api.DeploymentApi
 import dev.restate.admin.client.ApiClient
 import dev.restate.admin.model.RegisterDeploymentRequest
 import dev.restate.admin.model.RegisterDeploymentRequestAnyOf
+import dev.restate.idea.RestateIcons
+import dev.restate.idea.RestateNotifications.showNotification
+import dev.restate.idea.settings.RestateSettings
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.kohsuke.github.GitHubBuilder

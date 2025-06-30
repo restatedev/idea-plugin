@@ -1,4 +1,4 @@
-package com.example.restate.servermanager
+package dev.restate.idea.servermanager
 
 import com.intellij.util.messages.Topic
 

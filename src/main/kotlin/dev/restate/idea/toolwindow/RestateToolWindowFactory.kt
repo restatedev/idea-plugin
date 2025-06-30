@@ -1,12 +1,12 @@
-package com.example.restate.toolwindow
+package dev.restate.idea.toolwindow
 
-import com.example.restate.RestateNotifications
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.jcef.JBCefApp
+import dev.restate.idea.RestateNotifications
 
 class RestateToolWindowFactory : ToolWindowFactory {
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {

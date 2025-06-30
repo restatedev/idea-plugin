@@ -1,15 +1,10 @@
-package com.example.restate.runconfiguration
+package dev.restate.idea.runconfiguration
 
-import com.example.restate.RestateNotifications.showNotification
-import com.example.restate.RestateNotifications.showNotificationWithActions
-import com.example.restate.servermanager.RestateServerManager
-import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
@@ -17,6 +12,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
+import dev.restate.idea.RestateNotifications.showNotification
+import dev.restate.idea.RestateNotifications.showNotificationWithActions
+import dev.restate.idea.servermanager.RestateServerManager
+import dev.restate.idea.servermanager.RestateServerTopic
 
 class RestateExecutionListener(private val project: Project) : ExecutionListener {
 
@@ -29,18 +29,16 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
 
   override fun processStarted(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
     val runProfile = env.runProfile
-    LOG.info("Process started for runProfile: ${runProfile.name} (Executor: $executorId)")
+    LOG.info("Listening ${runProfile.name} (Executor: $executorId)")
 
     // Attach a ProcessAdapter to all process handlers to monitor their output
     handler.addProcessListener(object : ProcessAdapter() {
-      override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-        // Only check stdout output
-        if (outputType != ProcessOutputTypes.STDOUT) return
-
-        val text = event.text
-
+      override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
         // Check if the output contains the Restate Server started text
-        if (text.contains(SDK_JAVA_STARTED_TEXT) || text.contains(SDK_GO_STARTED_TEXT_1) || text.contains(SDK_GO_STARTED_TEXT_2)) {
+        if (event.text.contains(SDK_JAVA_STARTED_TEXT) || event.text.contains(SDK_GO_STARTED_TEXT_1) || event.text.contains(
+            SDK_GO_STARTED_TEXT_2
+          )
+        ) {
           LOG.info("Detected a Restate service deployment: ${runProfile.name}")
 
           // Schedule service registration

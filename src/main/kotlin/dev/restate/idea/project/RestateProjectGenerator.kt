@@ -1,16 +1,18 @@
-package com.example.restate.project
+package dev.restate.idea.project
 
-import com.example.restate.RestateIcons
 import com.intellij.icons.AllIcons
+import com.intellij.ide.util.projectWizard.SettingsStep
 import com.intellij.ide.util.projectWizard.WebProjectTemplate
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.ui.dsl.builder.SegmentedButton
 import com.intellij.ui.dsl.builder.components.SegmentedButtonComponent
+import dev.restate.idea.RestateIcons
 import java.io.File
 import java.net.URLDecoder
 import java.nio.file.Files
@@ -48,13 +50,13 @@ class RestateProjectGenerator : WebProjectTemplate<RestateProjectGenerator.Resta
 
       override fun getSettings(): RestateTemplateType = chooserButton.selectedItem!!
 
-      override fun validate(): com.intellij.openapi.ui.ValidationInfo? = null
+      override fun validate(): ValidationInfo? = null
 
       override fun isBackgroundJobRunning(): Boolean = false
 
       override fun addSettingsListener(listener: ProjectGeneratorPeer.SettingsListener) {}
 
-      override fun buildUI(settingsStep: com.intellij.ide.util.projectWizard.SettingsStep) {
+      override fun buildUI(settingsStep: SettingsStep) {
         settingsStep.addSettingsField("Template", chooserButton)
       }
     }

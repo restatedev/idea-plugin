@@ -1,4 +1,4 @@
-package com.example.restate.settings
+package dev.restate.idea.settings
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
@@ -18,7 +18,8 @@ class RestateSettings : PersistentStateComponent<RestateSettings> {
   var downloadRestateServer: Boolean = true
 
   // Environment variables to pass to the restate-server (format: KEY1=VALUE1;KEY2=VALUE2)
-  var environmentVariablesString: String = "RESTATE_ADMIN__experimental_feature_force_journal_retention=365days;RESTATE_WORKER__INVOKER__INACTIVITY_TIMEOUT=1day"
+  var environmentVariablesString: String =
+    "RESTATE_ADMIN__experimental_feature_force_journal_retention=365days;RESTATE_WORKER__INVOKER__INACTIVITY_TIMEOUT=1day"
 
   // Helper function to get environment variables as a map
   fun getEnvironmentVariablesMap(): Map<String, String> {

@@ -1,4 +1,4 @@
-package com.example.restate
+package dev.restate.idea
 
 import com.intellij.openapi.util.IconLoader
 

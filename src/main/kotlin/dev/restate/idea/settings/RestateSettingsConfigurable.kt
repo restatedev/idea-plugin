@@ -1,4 +1,4 @@
-package com.example.restate.settings
+package dev.restate.idea.settings
 
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent

@@ -34,35 +34,35 @@
         <!-- Register the Restate tool window -->
         <toolWindow id="Restate"
                     secondary="true"
-                    icon="com.example.restate.RestateIcons.ToolWindow"
+                    icon="dev.restate.idea.RestateIcons.ToolWindow"
                     anchor="right"
-                    factoryClass="com.example.restate.toolwindow.RestateToolWindowFactory"/>
+                    factoryClass="dev.restate.idea.toolwindow.RestateToolWindowFactory"/>
 
         <!-- Register the Restate project template -->
-        <directoryProjectGenerator implementation="com.example.restate.project.RestateProjectGenerator"/>
+        <directoryProjectGenerator implementation="dev.restate.idea.project.RestateProjectGenerator"/>
 
-        <moduleBuilder builderClass="com.example.restate.project.RestateModuleProjectGenerator"/>
+        <moduleBuilder builderClass="dev.restate.idea.project.RestateModuleProjectGenerator"/>
 
-        <postStartupActivity implementation="com.example.restate.RestatePluginStartupActivity"/>
+        <postStartupActivity implementation="dev.restate.idea.RestatePluginStartupActivity"/>
 
         <notificationGroup id="Restate Plugin Notifications"
                            displayType="BALLOON"/>
 
         <!-- Register the Restate settings -->
-        <applicationService serviceImplementation="com.example.restate.settings.RestateSettings"/>
+        <applicationService serviceImplementation="dev.restate.idea.settings.RestateSettings"/>
         <applicationConfigurable
             parentId="tools"
-            instance="com.example.restate.settings.RestateSettingsConfigurable"
-            id="com.example.restate.settings.RestateSettingsConfigurable"
+            instance="dev.restate.idea.settings.RestateSettingsConfigurable"
+            id="dev.restate.idea.settings.RestateSettingsConfigurable"
             displayName="Restate"/>
     </extensions>
 
     <actions>
-        <action id="com.example.restate.actions.StartRestateServerAction"
-                class="com.example.restate.actions.StartRestateServerAction"
+        <action id="dev.restate.idea.actions.StartRestateServerAction"
+                class="dev.restate.idea.actions.StartRestateServerAction"
                 text="Start Restate Server"
                 description="Start the Restate server"
-                icon="com.example.restate.RestateIcons.StartServer">
+                icon="dev.restate.idea.RestateIcons.StartServer">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>

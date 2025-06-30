@@ -1,12 +1,12 @@
-package com.example.restate.toolwindow
+package dev.restate.idea.toolwindow
 
-import com.example.restate.servermanager.RestateServerTopic
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.jcef.JBCefBrowser
+import dev.restate.idea.servermanager.RestateServerTopic
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
