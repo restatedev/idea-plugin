@@ -22,7 +22,9 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
 
   companion object {
     private val LOG = Logger.getInstance(RestateExecutionListener::class.java)
-    private const val RESTATE_SERVER_STARTED_TEXT = "Restate HTTP Endpoint server started on port 9080"
+    private const val SDK_JAVA_STARTED_TEXT = "Restate HTTP Endpoint server started on port 9080"
+    private const val SDK_GO_STARTED_TEXT_1 = "Restate SDK started listening on [::]:9080"
+    private const val SDK_GO_STARTED_TEXT_2 = "Restate SDK started listening on 127.0.0.1:9080"
   }
 
   override fun processStarted(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
@@ -38,12 +40,16 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
         val text = event.text
 
         // Check if the output contains the Restate Server started text
-        if (text.contains(RESTATE_SERVER_STARTED_TEXT)) {
-          LOG.info("Detected a Restate application: ${runProfile.name}. Output contains '$RESTATE_SERVER_STARTED_TEXT'")
+        if (text.contains(SDK_JAVA_STARTED_TEXT) || text.contains(SDK_GO_STARTED_TEXT_1) || text.contains(SDK_GO_STARTED_TEXT_2)) {
+          LOG.info("Detected a Restate service deployment: ${runProfile.name}")
 
           // Schedule service registration
           onRestateServiceDeploymentStarted(runProfile, true)
         }
+      }
+
+      override fun startNotified(event: ProcessEvent) {
+        super.startNotified(event)
       }
     })
   }
