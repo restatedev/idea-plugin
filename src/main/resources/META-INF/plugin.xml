@@ -1,5 +1,5 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
-<idea-plugin>
+<idea-plugin url="https://github.com/restatedev/idea-plugin">
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
     <id>dev.restate.idea-plugin</id>
 
@@ -55,6 +55,19 @@
             instance="dev.restate.idea.settings.RestateSettingsConfigurable"
             id="dev.restate.idea.settings.RestateSettingsConfigurable"
             displayName="Restate"/>
+
+        <dependencySupport kind="java"
+                           coordinate="dev.restate:sdk-java-http"
+                           displayName="Restate"/>
+        <dependencySupport kind="java"
+                           coordinate="dev.restate:sdk-java-lambda"
+                           displayName="Restate"/>
+        <dependencySupport kind="kotlin"
+                           coordinate="dev.restate:sdk-kotlin-http"
+                           displayName="Restate"/>
+        <dependencySupport kind="kotlin"
+                           coordinate="dev.restate:sdk-kotlin-lambda"
+                           displayName="Restate"/>
     </extensions>
 
     <actions>
