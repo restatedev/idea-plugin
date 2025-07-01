@@ -1,7 +1,7 @@
 plugins {
   id("java")
   id("org.jetbrains.kotlin.jvm") version "2.1.0"
-  id("org.jetbrains.intellij.platform") version "2.5.0"
+  id("org.jetbrains.intellij.platform") version "2.6.0"
 }
 
 group = "dev.restate"
@@ -29,7 +29,7 @@ dependencies {
   implementation("dev.restate:admin-client:2.1.0")
 
   // Apache Commons Compression for tar.xz extraction
-  implementation("org.apache.commons:commons-compress:1.25.0")
+  implementation("org.apache.commons:commons-compress:1.26.0")
   // XZ for Java for LZMA/XZ compression support
   implementation("org.tukaani:xz:1.9")
 }

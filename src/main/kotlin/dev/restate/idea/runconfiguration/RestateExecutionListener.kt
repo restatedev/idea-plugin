@@ -2,9 +2,9 @@ package dev.restate.idea.runconfiguration
 
 import com.intellij.execution.ExecutionListener
 import com.intellij.execution.configurations.RunProfile
-import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
@@ -32,7 +32,7 @@ class RestateExecutionListener(private val project: Project) : ExecutionListener
     LOG.info("Listening ${runProfile.name} (Executor: $executorId)")
 
     // Attach a ProcessAdapter to all process handlers to monitor their output
-    handler.addProcessListener(object : ProcessAdapter() {
+    handler.addProcessListener(object : ProcessListener {
       override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
         // Check if the output contains the Restate Server started text
         if (event.text.contains(SDK_JAVA_STARTED_TEXT) || event.text.contains(SDK_GO_STARTED_TEXT_1) || event.text.contains(

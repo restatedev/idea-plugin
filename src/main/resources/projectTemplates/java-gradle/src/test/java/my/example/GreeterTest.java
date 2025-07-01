@@ -20,15 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @RestateTest
 class GreeterTest {
 
-  @BindService
-  private final Greeter greeter = new Greeter();
+    @BindService
+    private final Greeter greeter = new Greeter();
 
-  @Test
-  @Timeout(value = 10)
-  void testGreet(@RestateClient Client ingressClient) {
-    var client = GreeterClient.fromClient(ingressClient);
+    @Test
+    @Timeout(value = 10)
+    void testGreet(@RestateClient Client ingressClient) {
+        var client = GreeterClient.fromClient(ingressClient);
 
-    String response = client.greet("Francesco");
-    assertEquals(response, "You said hi to Francesco!");
-  }
+        String response = client.greet("Francesco");
+        assertEquals(response, "You said hi to Francesco!");
+    }
 }

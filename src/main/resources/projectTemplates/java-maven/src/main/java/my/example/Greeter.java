@@ -9,12 +9,12 @@ import dev.restate.sdk.http.vertx.RestateHttpServer;
 @Service
 public class Greeter {
 
-  @Handler
-  public String greet(Context ctx, String name) {
-    return "You said hi to " + name + "!";
-  }
+    @Handler
+    public String greet(Context ctx, String name) {
+        return "You said hi to " + name + "!";
+    }
 
-  public static void main(String[] args) {
-    RestateHttpServer.listen(Endpoint.bind(new Greeter()));
-  }
+    public static void main(String[] args) {
+        RestateHttpServer.listen(Endpoint.bind(new Greeter()));
+    }
 }

@@ -49,10 +49,10 @@
         <!-- Register the Restate settings -->
         <applicationService serviceImplementation="dev.restate.idea.settings.RestateSettings"/>
         <applicationConfigurable
-            parentId="tools"
-            instance="dev.restate.idea.settings.RestateSettingsConfigurable"
-            id="dev.restate.idea.settings.RestateSettingsConfigurable"
-            displayName="Restate"/>
+                parentId="tools"
+                instance="dev.restate.idea.settings.RestateSettingsConfigurable"
+                id="dev.restate.idea.settings.RestateSettingsConfigurable"
+                displayName="Restate"/>
 
         <dependencySupport kind="java"
                            coordinate="dev.restate:sdk-java-http"

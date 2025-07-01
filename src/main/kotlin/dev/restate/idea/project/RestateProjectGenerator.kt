@@ -11,7 +11,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.ui.dsl.builder.SegmentedButton
-import com.intellij.ui.dsl.builder.components.SegmentedButtonComponent
+import com.intellij.ui.dsl.builder.panel
 import dev.restate.idea.RestateIcons
 import java.io.File
 import java.net.URLDecoder
@@ -37,18 +37,20 @@ class RestateProjectGenerator : WebProjectTemplate<RestateProjectGenerator.Resta
 
   override fun createPeer(): ProjectGeneratorPeer<RestateTemplateType> {
     return object : ProjectGeneratorPeer<RestateTemplateType> {
-      private val chooserButton = SegmentedButtonComponent<RestateTemplateType> {
-        SegmentedButton.createPresentation(it.displayName)
-      }
-
-      init {
-        chooserButton.selectedItem = RestateTemplateType.JAVA_GRADLE
-        chooserButton.items = RestateTemplateType.entries
+      private lateinit var chooser: SegmentedButton<RestateTemplateType>
+      private val settingsPanel = panel {
+        row {
+          chooser = segmentedButton(RestateTemplateType.entries) {
+            text = it.displayName
+          }.also {
+            it.selectedItem = RestateTemplateType.JAVA_GRADLE
+          }
+        }
       }
 
       override fun getComponent(): JComponent = JPanel()
 
-      override fun getSettings(): RestateTemplateType = chooserButton.selectedItem!!
+      override fun getSettings(): RestateTemplateType = chooser.selectedItem!!
 
       override fun validate(): ValidationInfo? = null
 
@@ -57,7 +59,7 @@ class RestateProjectGenerator : WebProjectTemplate<RestateProjectGenerator.Resta
       override fun addSettingsListener(listener: ProjectGeneratorPeer.SettingsListener) {}
 
       override fun buildUI(settingsStep: SettingsStep) {
-        settingsStep.addSettingsField("Template", chooserButton)
+        settingsStep.addSettingsField("Template", settingsPanel)
       }
     }
   }
