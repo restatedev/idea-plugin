@@ -11,7 +11,6 @@ import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -103,14 +102,15 @@ class RestateServerManager(private val project: Project) {
     messageBus.syncPublisher(RestateServerTopic.TOPIC).onServerStopped()
   }
 
-  // Binary paths
-  private val RESTATE_PLUGIN_DIR = Paths.get(PathManager.getSystemPath(), "restate-plugin")
-  private val RESTATE_SERVER_DOWNLOAD_PATH: Path
-    get() = RESTATE_PLUGIN_DIR.resolve("restate-server")
-
-  init {
-    // Create binary directory if it doesn't exist
-    Files.createDirectories(RESTATE_PLUGIN_DIR)
+  private fun restateServerProjectPath(project: Project): Path {
+      val projectRootDir = project.guessProjectDir()
+      return if (projectRootDir != null) {
+        val restateBinDir = Paths.get(projectRootDir.path, ".restate", "bin")
+        Files.createDirectories(restateBinDir)
+        restateBinDir.resolve("restate-server")
+      } else {
+        throw IllegalStateException("Could not determine project root directory")
+      }
   }
 
   /**
@@ -119,7 +119,7 @@ class RestateServerManager(private val project: Project) {
    * @return The path to the downloaded binary
    * @throws Exception if the download fails
    */
-  fun downloadLatestRelease(project: Project): Path {
+  fun downloadLatestRelease(project: Project, destinationFile: Path): Path {
     LOG.info("Downloading latest Restate release")
 
     try {
@@ -214,13 +214,13 @@ class RestateServerManager(private val project: Project) {
         LOG.info("Found extracted binary at: $extractedBinary")
 
         // Copy the binary to the final location
-        Files.copy(extractedBinary, RESTATE_SERVER_DOWNLOAD_PATH, StandardCopyOption.REPLACE_EXISTING)
+        Files.copy(extractedBinary, destinationFile, StandardCopyOption.REPLACE_EXISTING)
 
         // Make the binary executable
-        makeExecutable(RESTATE_SERVER_DOWNLOAD_PATH)
+        makeExecutable(destinationFile)
 
-        LOG.info("Successfully installed Restate binary to: $RESTATE_SERVER_DOWNLOAD_PATH")
-        return RESTATE_SERVER_DOWNLOAD_PATH
+        LOG.info("Successfully installed Restate binary to: $destinationFile")
+        return destinationFile
       } finally {
         // Clean up temporary files
         try {
@@ -242,15 +242,15 @@ class RestateServerManager(private val project: Project) {
    *
    * @return true if the binary needs to be updated, false otherwise
    */
-  fun shouldCheckForUpdates(): Boolean {
-    // Check for updates once a day
-    val file = RESTATE_SERVER_DOWNLOAD_PATH.toFile()
-    if (!file.exists()) return true
+  fun shouldCheckForUpdates(localRestateServerPath: Path): Boolean {
+      // Check for updates once a day
+      val file = localRestateServerPath.toFile()
+      if (!file.exists()) return true
 
-    val lastModified = file.lastModified()
-    val oneDayAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
+      val lastModified = file.lastModified()
+      val oneDayAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
 
-    return lastModified < oneDayAgo
+      return lastModified < oneDayAgo
   }
 
   /**
@@ -382,33 +382,34 @@ class RestateServerManager(private val project: Project) {
       // Get settings
       val settings = RestateSettings.getInstance()
 
-      // Download the binary if it doesn't exist or if we want to check for updates
-      if (settings.downloadRestateServer && shouldCheckForUpdates()) {
-        consoleView.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
-        downloadLatestRelease(project)
-        consoleView.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
-      }
-
       val restateServerBinaryPath = if (settings.downloadRestateServer) {
-        RESTATE_SERVER_DOWNLOAD_PATH.toString()
+        val localRestateServerPath = restateServerProjectPath(project)
+
+        // Download the binary if it doesn't exist or if we want to check for updates
+        if (shouldCheckForUpdates(localRestateServerPath)) {
+          consoleView.print("Downloading latest Restate binary...\n", ConsoleViewContentType.NORMAL_OUTPUT)
+          downloadLatestRelease(project, localRestateServerPath)
+          consoleView.print("Download completed.\n", ConsoleViewContentType.NORMAL_OUTPUT)
+        }
+
+        localRestateServerPath.toString()
       } else {
+        // Nothing to do, just use global install
         "restate-server"
       }
 
-      // Create restate-data directory in project root
+      // Get project root directory
       val projectRootDir = project.guessProjectDir()
-      val runCmd = if (projectRootDir != null) {
-        val restateDataDir = Paths.get(projectRootDir.path, "restate-data")
-        Files.createDirectories(restateDataDir)
 
+      val runCmd = if (projectRootDir != null) {
         // Create base command line
         GeneralCommandLine(
           restateServerBinaryPath,
-          "--base-dir", restateDataDir.toString(),
+          "--base-dir", Paths.get(projectRootDir.path, ".restate").toString(),
           "--node-name", "dev-cluster"
         )
       } else {
-        // Couldn't compute the base dir!
+        // Couldn't compute the base dir, but we're using system restate-server
         GeneralCommandLine(
           restateServerBinaryPath,
           "--node-name", "dev-cluster"
@@ -469,13 +470,13 @@ class RestateServerManager(private val project: Project) {
       )
       startRequested = false
 
-      LOG.warn("Error starting Restate server", e)
+      LOG.info("Error starting Restate server", e)
       // Display also notification
       showNotification(
         project,
-        "Restate-server startup Failed",
+        "Restate-server startup failed",
         "Error when trying to startup restate-server: ${e.message}",
-        NotificationType.ERROR
+        NotificationType.WARNING
       )
     }
   }
